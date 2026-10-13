@@ -1,0 +1,156 @@
+services:
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: fundit-api-gateway
+    env_file: .env
+    ports:
+      - "31028:8500"
+    depends_on:
+      - project-service
+      - payment-service
+      - reward-service
+      - communication-service
+      - search-service
+      - analytics-service
+      - notification-service
+    networks: [fundit-net]
+
+  project-service:
+    build:
+      context: .
+      dockerfile: project-service/Dockerfile
+    container_name: fundit-project
+    env_file: .env
+    ports:
+      - "31023:8501"
+    depends_on:
+      - postgres
+      - redis
+    networks: [fundit-net]
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: payment-service/Dockerfile
+    container_name: fundit-payment
+    env_file: .env
+    ports:
+      - "31025:8502"
+    depends_on:
+      - postgres
+      - redis
+    networks: [fundit-net]
+
+  reward-service:
+    build:
+      context: .
+      dockerfile: reward-service/Dockerfile
+    container_name: fundit-reward
+    env_file: .env
+    ports:
+      - "31027:8503"
+    depends_on:
+      - postgres
+      - redis
+    networks: [fundit-net]
+
+  communication-service:
+    build:
+      context: .
+      dockerfile: communication-service/Dockerfile
+    container_name: fundit-communication
+    env_file: .env
+    ports:
+      - "31024:8504"
+    depends_on:
+      - redis
+    networks: [fundit-net]
+
+  search-service:
+    build:
+      context: .
+      dockerfile: search-service/Dockerfile
+    container_name: fundit-search
+    env_file: .env
+    ports:
+      - "31026:8505"
+    depends_on:
+      - redis
+    networks: [fundit-net]
+
+  analytics-service:
+    build:
+      context: .
+      dockerfile: analytics-service/Dockerfile
+    container_name: fundit-analytics
+    env_file: .env
+    ports:
+      - "31021:8506"
+    depends_on:
+      - postgres
+      - redis
+    networks: [fundit-net]
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: fundit-notification
+    env_file: .env
+    ports:
+      - "31022:8507"
+    depends_on:
+      - redis
+    networks: [fundit-net]
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: fundit-celery-worker
+    env_file: .env
+    command: celery -A app.celery_app.celery_app worker --loglevel=info --pool=solo
+    depends_on:
+      - redis
+    networks: [fundit-net]
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: fundit-frontend
+    env_file: .env
+    ports:
+      - "31029:5177"
+    depends_on:
+      - api-gateway
+    networks: [fundit-net]
+
+  postgres:
+    image: postgres:16
+    container_name: fundit-postgres
+    environment:
+      POSTGRES_DB: fundit
+      POSTGRES_USER: fundit
+      POSTGRES_PASSWORD: fundit
+    ports:
+      - "31020:5432"
+    volumes:
+      - fundit_postgres_data:/var/lib/postgresql/data
+    networks: [fundit-net]
+
+  redis:
+    image: redis:7
+    container_name: fundit-redis
+    ports:
+      - "6385:6379"
+    networks: [fundit-net]
+
+networks:
+  fundit-net:
+    driver: bridge
+
+volumes:
+  fundit_postgres_data:
